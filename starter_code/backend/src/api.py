@@ -16,7 +16,7 @@ CORS(app)
 !! NOTE THIS WILL DROP ALL RECORDS AND START YOUR DB FROM SCRATCH
 !! NOTE THIS MUST BE UNCOMMENTED ON FIRST RUN
 '''
-db_drop_and_create_all()
+#db_drop_and_create_all()
 
 ## ROUTES
 '''
@@ -50,7 +50,7 @@ def get_drinks():
 '''
 @app.route('/drinks-detail', methods=['GET'])
 @requires_auth('get:drinks-detail')
-def get_drinks_detail(jwt):
+def get_drinks_detail(payload):
     try:
         drinks = Drink.query.all()
 
@@ -75,7 +75,7 @@ def get_drinks_detail(jwt):
 '''
 @app.route('/drinks', methods=['POST'])
 @requires_auth('post:drinks')
-def post_drinks(jwt):
+def post_drinks(payload):
     body = request.get_json()
 
     if not ('title' in body and 'recipe' in body):
@@ -89,8 +89,8 @@ def post_drinks(jwt):
         drink.insert()
         
         return jsonify({
-            "success": True,
-            "drinks": [drink.long()]
+            'success': True,
+            'drinks': [drink.long()]
         })
     except:
         abort(422)
@@ -111,15 +111,21 @@ def post_drinks(jwt):
 '''
 @app.route('/drinks/<id>', methods=['PATCH'])
 @requires_auth('patch:drinks')
-def patch_drinks_id(jwt, id):
+def patch_drinks_id(payload, id):
     drink = Drink.query.get(id)
 
     if drink:
         try:
-            body = request.get_josn()
+            body = request.get_json()
 
             title = body.get('title')
             recipe = body.get('recipe')
+
+            if title:
+                drink.title = title
+            if recipe:
+                drink.recipe = recipe
+
 
             drink.update()
 
@@ -144,13 +150,10 @@ def patch_drinks_id(jwt, id):
 '''
 @app.route('/drinks/<id>', methods=['DELETE'])
 @requires_auth('delete:drinks')
-def delete_drinks(jwt, id):
+def delete_drinks(payload, id):
     drink = Drink.query.get(id)
 
-    if not drink:
-        abort(404)
-
-    else:
+    if drink:
         try:
             drink.delete()
 
@@ -160,6 +163,8 @@ def delete_drinks(jwt, id):
             })
         except:
             abort(422)
+    else:
+        abort(404)
     
 
 
